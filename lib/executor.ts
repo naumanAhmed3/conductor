@@ -1,5 +1,6 @@
 import type { Browser, Page } from 'playwright-core';
 import type { Flow, FlowStep, RunStep, StepStatus } from './types';
+import { assertAllowedNavigation } from './security';
 
 // ─────────────────────────────────────────────────────────────
 // The Conductor engine. Takes a declarative Flow and runs it with a
@@ -127,6 +128,10 @@ export async function executeFlow(flow: Flow): Promise<ExecResult> {
   try {
     browser = await launchBrowser();
     const context = await browser.newContext({ viewport: VIEWPORT });
+    await context.route('**/*', async (route) => {
+      try { assertAllowedNavigation(route.request().url()); await route.continue(); }
+      catch { await route.abort('blockedbyclient'); }
+    });
     const page = await context.newPage();
 
     for (let idx = 0; idx < allSteps.length; idx++) {

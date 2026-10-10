@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getFlow, recordRun } from '@/lib/repo';
 import { executeFlow } from '@/lib/executor';
+import { requireAdmin } from '@/lib/security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,9 +10,11 @@ export const maxDuration = 60;
 
 // POST /api/flows/:id/run — execute the flow now and record the run.
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const unauthorized = requireAdmin(req);
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   try {
     const flow = await getFlow(id);
